@@ -2,7 +2,16 @@
 
 set -e
 
-deploy_prefix="${STACK_NAME}-interim" docker stack deploy -c "${STACK_FILE}" "${STACK_NAME}"
+if [ "${HOME}" == "" ]; then
+  echo "\$HOME is empty. Docker registry credentials will be unavailable." >&2
+elif [ "${HOME}" == "/" ]; then
+  echo "\$HOME is '/'. Docker registry credentials will be unavailable." >&2
+elif [ ! -f "${HOME}/.docker/config.json" ]; then
+  mkdir "${HOME}/.docker"
+  ln -sfn /auth.json "${HOME}/.docker/config.json"
+fi
+
+deploy_prefix="${STACK_NAME}-interim" docker stack deploy --with-registry-auth -c "${STACK_FILE}" "${STACK_NAME}"
 
 docker secret ls --format "table {{.ID}}\t{{.Name}}" \
   | grep -E "\s+${STACK_NAME}-stable" \
@@ -13,7 +22,7 @@ docker config ls --format "table {{.ID}}\t{{.Name}}" \
   | awk '{print $1}' \
   | xargs -I {} docker config rm {}
 
-deploy_prefix="${STACK_NAME}-stable" docker stack deploy -c "${STACK_FILE}" "${STACK_NAME}"
+deploy_prefix="${STACK_NAME}-stable" docker stack deploy --with-registry-auth -c "${STACK_FILE}" "${STACK_NAME}"
 
 docker secret ls --format "table {{.ID}}\t{{.Name}}" \
   | grep -E "\s+${STACK_NAME}-interim" \
