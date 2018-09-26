@@ -6,7 +6,8 @@ Release the app in the current directory to localhost's Docker swarm using 'perc
 docker run --rm \
   -v "${PWD}:/app" \
   -v "/var/run/docker.sock:/var/run/docker.sock" \
-  -e "STACK_NAME=perch"
-  -e "STACK_FILE=/app/docker-stack.yml"
+  -v "${HOME}/.docker/config.json:/auth.json" \
+  -e "STACK_NAME=perch" \
+  -e "STACK_FILE=/app/docker-stack.yml" \
   kelvineducation/stack-deploy
 ```
