@@ -11,8 +11,8 @@ elif [ ! -f "${HOME}/.docker/config.json" ]; then
   ln -sfn /auth.json "${HOME}/.docker/config.json"
 fi
 
-if [ -f /.env ]; then
-  export $(grep -v '^\s*#' /.env | grep '=' | xargs -0)
+if [ -f .env ]; then
+  export $(grep -v '^\s*#' .env | grep '=' | xargs -0)
 fi
 
 deploy_prefix="${STACK_NAME}-interim" docker stack deploy --with-registry-auth -c "${STACK_FILE}" "${STACK_NAME}"
