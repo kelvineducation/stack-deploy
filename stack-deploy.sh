@@ -66,19 +66,64 @@ docker volume prune --force --filter 'label=education.kelvin.prune=stack-deploy'
 
 echo -n "Waiting for deploy to complete... "
 
+fail_after=$(($(date +%s) + 60))
+
 service_count=$(docker stack services -q "${STACK_NAME}" | wc -l)
 service_ids=($(docker stack services -q "${STACK_NAME}"))
+
+determine_status() {
+  local service_id="${1}"
+
+  status=$(docker service inspect --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}' "${service_id}")
+
+  if [ "${status}" != "" ]; then
+    return
+  fi
+
+  # replicas is formatted as actual_count/expected_count
+  replicas=$(docker service ls --filter "id=${service_id}" --format '{{.Replicas}}')
+  # strip off `actual_count/`
+  expected="${replicas#*/}"
+
+  task_ids=($(docker service ps -q --filter 'desired-state=running' "${service_id}"))
+  [ ${#task_ids[@]} -eq 0 ] && status="new" && return
+  container_ids=($(docker inspect --format '{{.Status.ContainerStatus.ContainerID}}' "${task_ids[@]}"))
+  [ ${#container_ids[@]} -eq 0 ] && status="new" && return
+  started_ats=($(
+    docker inspect --format '{{if .State.Running}}{{.State.StartedAt}}{{end}}' "${container_ids[@]}" \
+      | sed -E 's/(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})\.\d+Z/\1 \2/' \
+      | xargs -I {} date +%s -d "{}"
+  ))
+
+  now=$(date +%s)
+  actual=0
+  for started_at in "${started_ats[@]}"; do
+    [ $((now - started_at)) -gt 10 ] && actual=$(($actual + 1))
+  done
+
+  status="new"
+  if [ $actual -eq $expected ]; then
+    status="completed"
+  fi
+}
 
 failed_count=0
 completed_count=0
 while [ $completed_count -lt $service_count ]; do
+  iteration_start=$(date +%s)
+
   failed_count=0
   completed_count=0
 
-  statuses=($(docker service inspect --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}' "${service_ids[@]}"))
-  for status in "${statuses[@]}"; do
+  for service_id in "${service_ids[@]}"; do
+    determine_status "${service_id}"
+
+    if [[ $status = "new" && $iteration_start -gt $fail_after ]]; then
+      status="timeout"
+    fi
+
     case "${status}" in
-      *paused | rollback_completed)
+      *paused | rollback_completed | timeout)
         failed_count=$((failed_count + 1))
         completed_count=$((completed_count + 1))
         ;;
