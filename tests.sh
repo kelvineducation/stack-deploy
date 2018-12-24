@@ -9,7 +9,7 @@ run_test() {
   local test_name="${1}"
   local stack_name="test-${test_name}-${timestamp}"
 
-  local expected_exit=$(sed -E '/^Exit code: ([0-9]+)/c \1' "tests/${test_name}.expected.txt")
+  local expected_exit=$(sed -E '/^Exit code:/s/^.*([0-9]+)$/\1/' "tests/${test_name}.expected.txt")
 
   echo -n "Running ${test_name}... "
 
