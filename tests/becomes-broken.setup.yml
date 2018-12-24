@@ -4,11 +4,11 @@ services:
     image: alpine
     command: ["sleep", "60"]
     deploy:
-      replicas: 2
+      replicas: 1
   failure:
     image: alpine
-    command: ["false"]
+    command: ["sleep", "60"]
     deploy:
-      replicas: 2
+      replicas: 1
       restart_policy:
         max_attempts: 3
