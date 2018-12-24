@@ -5,8 +5,8 @@ docker build -q -t kelvineducation/stack-deploy:test . || exit $?
 has_failures=0
 
 deploy() {
-  stack_file="${1}"
-  stack_name="${2}"
+  local stack_file="${1}"
+  local stack_name="${2}"
 
   STACK_FILE="${stack_file}" \
     STACK_NAME="${stack_name}" \
