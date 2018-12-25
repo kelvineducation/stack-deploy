@@ -85,10 +85,13 @@ determine_status() {
   # strip off `actual_count/`
   expected="${replicas#*/}"
 
+  local zero_status="new"
+  [ $expected -eq 0 ] && zero_status="completed"
+
   task_ids=($(docker service ps -q --filter 'desired-state=running' "${service_id}"))
-  [ ${#task_ids[@]} -eq 0 ] && status="new" && return
+  [ ${#task_ids[@]} -eq 0 ] && status="${zero_status}" && return
   container_ids=($(docker inspect --format '{{.Status.ContainerStatus.ContainerID}}' "${task_ids[@]}"))
-  [ ${#container_ids[@]} -eq 0 ] && status="new" && return
+  [ ${#container_ids[@]} -eq 0 ] && status="${zero_status}" && return
   started_ats=($(
     docker inspect --format '{{if .State.Running}}{{.State.StartedAt}}{{end}}' "${container_ids[@]}" \
       | sed -E 's/(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})\.\d+Z/\1 \2/' \

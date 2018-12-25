@@ -5,3 +5,9 @@ services:
     command: ["sleep", "60"]
     deploy:
       replicas: 2
+
+  none:
+    image: alpine
+    command: ["sleep", "60"]
+    deploy:
+      replicas: 0
