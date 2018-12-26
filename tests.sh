@@ -20,17 +20,20 @@ run_test() {
   local test_name="${1}"
   local stack_name="test-${test_name}-${timestamp}"
 
-  local expected_exit=$(sed -E '/^Exit code:/s/^.*([0-9]+)$/\1/' "tests/${test_name}.expected.txt")
+  local expected_exit=$(grep '^Exit code:' "tests/${test_name}.expected.txt" | sed -E 's/^.*([0-9]+)$/\1/')
 
   echo -n "Running '${test_name}'... "
 
   local setup_stack="${test_name}.setup.yml"
   local setup_exit=0
   if [ -f "${setup_stack}" ]; then
+    local expected_setup=$(grep '^Setup exit:' "tests/${test_name}.expected.txt" | sed -E 's/^.*([0-9]+)$/\1/' )
+    expected_setup="${expected_setup:-0}"
+
     deploy "${setup_stack}" "${stack_name}"
     setup_exit=$?
 
-    if [ $setup_exit -ne 0 ]; then
+    if [ $setup_exit -ne $expected_setup ]; then
       echo "setup failed. Setup stack deploy exited with code ${setup_exit}."
       has_failures=1
       return
@@ -52,6 +55,7 @@ run_test() {
 
 run_test "works"
 run_test "update-works"
+run_test "begins-working"
 run_test "initially-broken"
 run_test "becomes-broken"
 

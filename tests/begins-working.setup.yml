@@ -1,0 +1,14 @@
+version: '3.5'
+services:
+  success:
+    image: alpine
+    command: ["sleep", "60"]
+    deploy:
+      replicas: 1
+  failure:
+    image: alpine
+    command: ["false"]
+    deploy:
+      replicas: 1
+      restart_policy:
+        max_attempts: 3
