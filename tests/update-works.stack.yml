@@ -1,0 +1,7 @@
+version: '3.5'
+services:
+  success:
+    image: alpine
+    command: ["sleep", "60"]
+    deploy:
+      replicas: 3
